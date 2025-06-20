@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from schemas import AddressCreate, AddressResponse
 from database import SessionLocal, engine
@@ -33,20 +33,20 @@ def calculate_distance_km(lat1, lon1, lat2, lon2):
 # --- API Endpoints ---
 
 # Create a new address entry
-@app.post("/addressBook", response_model=AddressResponse)
+@app.post("/addressBook", response_model=AddressResponse, status_code=status.HTTP_201_CREATED)
 def create_address_view(address: AddressCreate, db: Session = Depends(get_db)):
     # Validate latitude and longitude ranges
-    if not (-90 <= float(address.lat) <= 90):
-        raise HTTPException(status_code=400, detail="Latitude must be between -90 and 90")
-    if not (-180 <= float(address.long) <= 180):
-        raise HTTPException(status_code=400, detail="Longitude must be between -180 and 180")
+    if (-90<=float(address.lat)<=90) and (-180<=float(address.long)<=180): #range from -90 to 90 for latitude and -180 to 180 for longitude
+        # create an instance of the Address database model
+        db_address = models.Address(**address.dict())
 
-    # Save address to the database
-    db_address = models.Address(**address.dict())
-    db.add(db_address)
-    db.commit()
-    db.refresh(db_address)
-    return db_address
+        # Save address to the database
+        db.add(db_address)
+        db.commit()
+        db.refresh(db_address)
+        return db_address
+    else:
+        raise HTTPException(status_code=400, detail=f"Co-ordinate {address.lat, address.long} not in range lat(-90,90) and long(-180,180)")
 
 # Get all stored addresses
 @app.get("/addressBook", response_model=list[AddressResponse])
@@ -61,20 +61,18 @@ def update_address_view(address_id: int, address: AddressCreate, db: Session = D
         raise HTTPException(status_code=404, detail="Address not found")
     
     # Validate latitude and longitude ranges
-    if not (-90 <= float(address.lat) <= 90):
-        raise HTTPException(status_code=400, detail="Latitude must be between -90 and 90")
-    if not (-180 <= float(address.long) <= 180):
-        raise HTTPException(status_code=400, detail="Longitude must be between -180 and 180")
-
-    # Update each field
-    for key, value in address.dict().items():
-        setattr(db_address, key, value)
-    db.commit()
-    db.refresh(db_address)
-    return db_address
+    if (-90<=float(address.lat)<=90) and (-180<=float(address.long)<=180): #range from -90 to 90 for latitude and -180 to 180 for longitude
+        # Update each field
+        for key, value in address.dict().items():
+            setattr(db_address, key, value)
+        db.commit()
+        db.refresh(db_address)
+        return db_address
+    else:
+        raise HTTPException(status_code=400, detail=f"Co-ordinate {address.lat,address.long} not in range lat(-90,90) and long(-180,180)")
 
 # Delete an address by ID
-@app.delete("/addressBook/{address_id}")
+@app.delete("/addressBook/{address_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_address_view(address_id: int, db: Session = Depends(get_db)):
     db_address = db.query(models.Address).filter(models.Address.id == address_id).first()
     if not db_address:
@@ -88,14 +86,12 @@ def delete_address_view(address_id: int, db: Session = Depends(get_db)):
 @app.get("/addressBook/search", response_model=list[AddressResponse])
 def search_by_location(lat: float, long: float, distance_km: float, db: Session = Depends(get_db)):
     # Validate input coordinates
-    if not (-90 <= float(lat) <= 90):
-        raise HTTPException(status_code=400, detail="Latitude must be between -90 and 90")
-    if not (-180 <= float(long) <= 180):
-        raise HTTPException(status_code=400, detail="Longitude must be between -180 and 180")
-
-    # Filter addresses based on distance using Haversine
-    addresses = db.query(models.Address).all()
-    return [addr for addr in addresses if calculate_distance_km(lat, long, float(addr.lat), float(addr.long)) <= distance_km]
+    if (-90<=float(lat)<=90) and (-180<=float(long)<=180): #range from -90 to 90 for latitude and -180 to 180 for longitude
+        # Filter addresses based on distance using Haversine
+        addresses = db.query(models.Address).all()
+        return [addr for addr in addresses if calculate_distance_km(lat, long, float(addr.lat), float(addr.long)) <= distance_km]
+    else:
+        raise HTTPException(status_code=400, detail=f"Co-ordinate {lat, long} not in range lat(-90,90) and long(-180,180)")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
