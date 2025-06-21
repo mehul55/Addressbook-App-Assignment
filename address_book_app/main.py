@@ -32,6 +32,10 @@ def calculate_distance_km(lat1, lon1, lat2, lon2):
 
 # --- API Endpoints ---
 
+@app.get("/")
+def root():
+    return "Address Book App"
+
 # Create a new address entry
 @app.post("/addressBook", response_model=AddressResponse, status_code=status.HTTP_201_CREATED)
 def create_address_view(address: AddressCreate, db: Session = Depends(get_db)):
