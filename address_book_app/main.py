@@ -93,7 +93,14 @@ def search_by_location(lat: float, long: float, distance_km: float, db: Session 
     if (-90<=float(lat)<=90) and (-180<=float(long)<=180): #range from -90 to 90 for latitude and -180 to 180 for longitude
         # Filter addresses based on distance using Haversine
         addresses = db.query(models.Address).all()
-        return [addr for addr in addresses if calculate_distance_km(lat, long, float(addr.lat), float(addr.long)) <= distance_km]
+        matching_addresses = []
+
+        for addr in addresses:
+            distance = calculate_distance_km(lat, long, float(addr.lat), float(addr.long))
+            if distance <= distance_km:
+                matching_addresses.append(addr)
+
+        return matching_addresses
     else:
         raise HTTPException(status_code=400, detail=f"Co-ordinate {lat, long} not in range lat(-90,90) and long(-180,180)")
 
