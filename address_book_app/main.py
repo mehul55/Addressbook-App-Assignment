@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from schemas import AddressCreate, AddressResponse
-from database import SessionLocal, engine
-import models
+from .schemas import AddressCreate, AddressResponse
+from .database import SessionLocal, engine
+from . import models
 import uvicorn
 from math import radians, cos, sin, asin, sqrt
 
@@ -104,5 +104,5 @@ def search_by_location(lat: float, long: float, distance_km: float, db: Session 
     else:
         raise HTTPException(status_code=400, detail=f"Co-ordinate {lat, long} not in range lat(-90,90) and long(-180,180)")
 
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+# if __name__ == "__main__":
+#     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

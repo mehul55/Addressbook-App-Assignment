@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Numeric
-from database import Base
+from .database import Base
 
 # Define Address class inheriting from Base
 class Address(Base):
